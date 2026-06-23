@@ -1,0 +1,21 @@
+/* Custom utility jika diperlukan, sisanya ditangani oleh Tailwind CSS */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+}
+
+.status-badge-menunggu {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.status-badge-proses {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.status-badge-selesai {
+    background-color: #dcfce7;
+    color: #15803d;
+}

@@ -1,0 +1,11 @@
+[
+    {
+        "id": 1,
+        "nama": "Admin Silaris",
+        "email": "admin@silaris.com",
+        "role": "Petugas",
+        "password": "password123",
+        "created_at": "2026-06-22 12:00:00",
+        "updated_at": "2026-06-22 12:00:00"
+    }
+]

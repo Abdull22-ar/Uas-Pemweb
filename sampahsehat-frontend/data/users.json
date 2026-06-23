@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "nama": "Annisa Kholifatul",
+        "email": "annisa@pelapor.com",
+        "role": "Pelapor",
+        "password": "password123",
+        "created_at": "2026-06-23 16:59:23",
+        "updated_at": "2026-06-23 16:59:23"
+    },
+    {
+        "id": 2,
+        "nama": "Budi Koordinator",
+        "email": "koordinator@silaris.com",
+        "role": "Koordinator",
+        "password": "koordinator123",
+        "created_at": "2026-06-23 16:59:23",
+        "updated_at": "2026-06-23 16:59:23"
+    }
+]
