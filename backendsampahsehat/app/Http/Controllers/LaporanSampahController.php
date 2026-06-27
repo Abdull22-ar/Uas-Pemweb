@@ -33,7 +33,7 @@ class LaporanSampahController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = LaporanSampah::with('kategori')->latest();
+        $query = LaporanSampah::with('kategori', 'petugas')->latest();
 
         // Petugas hanya melihat laporan sesuai spesialisasi risiko
         $user = auth()->user();

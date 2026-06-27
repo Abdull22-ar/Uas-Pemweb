@@ -69,6 +69,22 @@ class PemantauanController extends Controller
                 ->get();
         }
 
+        // ── Data laporan diproses dengan lokasi (untuk peta) ───────────────
+        $laporanMapData = $laporanDiproses
+            ->filter(fn($l) => $l->latitude && $l->longitude)
+            ->map(fn($l) => [
+                'kode'       => $l->kode_laporan,
+                'lat'        => (float) $l->latitude,
+                'lng'        => (float) $l->longitude,
+                'lokasi'     => $l->lokasi,
+                'status'     => $l->status,
+                'label_status' => $l->label_status,
+                'petugas'    => $l->petugas?->name ?? '-',
+                'kategori'   => $l->kategori?->nama_kategori ?? '-',
+                'risiko'     => $l->kategori?->level_risiko ?? 'rendah',
+                'label_risiko' => $l->kategori?->label_risiko ?? 'rendah',
+            ]);
+
         // ── Ringkasan ─────────────────────────────────────────────────────
         $totalPetugas = User::where('role', 'petugas')->count();
         $totalDiproses = $laporanDiproses->count();
@@ -76,6 +92,7 @@ class PemantauanController extends Controller
 
         return view('admin.pemantauan.petugas', compact(
             'petugasMapData',
+            'laporanMapData',
             'kelompok',
             'kategoriPerRisiko',
             'totalPetugas',

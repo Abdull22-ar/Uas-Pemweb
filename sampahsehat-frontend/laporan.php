@@ -95,18 +95,19 @@ if ($response !== false) {
                     }).addTo(map);
 
                     let marker;
-                    map.on('click', function(e) {
-                        const lat = e.latlng.lat;
-                        const lng = e.latlng.lng;
-                        document.getElementById('latitude').value = lat;
-                        document.getElementById('longitude').value = lng;
+                    function updateCoords(latlng) {
+                        document.getElementById('latitude').value = latlng.lat.toFixed(6);
+                        document.getElementById('longitude').value = latlng.lng.toFixed(6);
                         document.getElementById('mapError').classList.add('d-none');
-
+                    }
+                    map.on('click', function(e) {
                         if (marker) {
                             marker.setLatLng(e.latlng);
                         } else {
-                            marker = L.marker(e.latlng).addTo(map);
+                            marker = L.marker(e.latlng, { draggable: true }).addTo(map);
+                            marker.on('dragend', function() { updateCoords(marker.getLatLng()); });
                         }
+                        updateCoords(e.latlng);
                     });
 
                     // AJAX Submit menggunakan Fetch API

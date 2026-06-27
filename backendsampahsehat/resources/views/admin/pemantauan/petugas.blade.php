@@ -27,6 +27,10 @@
                 <span class="small"><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:#ffc107;"></span>Sedang</span>
                 <span class="small"><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:#dc3545;"></span>Tinggi</span>
             </div>
+            <div class="form-check form-switch mb-0 d-flex align-items-center gap-1" style="font-size:13px;">
+                <input class="form-check-input" type="checkbox" id="tampilkanLaporan" checked>
+                <label class="form-check-label text-muted small" for="tampilkanLaporan">Laporan</label>
+            </div>
         </div>
     </div>
     <div id="petugasMap" style="height: 500px; width: 100%;"></div>
@@ -109,8 +113,13 @@ document.addEventListener('DOMContentLoaded', function() {
         switch(r) { case 'tinggi': return '#dc3545'; case 'sedang': return '#ffc107'; default: return '#198754'; }
     }
 
+    function getStatusColor(s) {
+        switch(s) { case 'baru': return '#0d6efd'; case 'diproses': return '#ffc107'; case 'selesai': return '#198754'; case 'ditolak': return '#dc3545'; default: return '#6c757d'; }
+    }
+
+    // ── Petugas markers ────────────────────────────────────────────
     var petugasData = @json($petugasMapData);
-    var markers = [];
+    var petugasMarkers = [];
 
     petugasData.forEach(function(p) {
         var color = getRisikoBg(p.risiko);
@@ -129,12 +138,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 (p.kontak ? '<div class="small text-muted"><i class="bi bi-telephone"></i> ' + p.kontak + '</div>' : '') +
                 '</div>'
             );
-        markers.push(m);
+        petugasMarkers.push(m);
     });
 
-    if (markers.length > 0) {
-        var group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.08));
+    // ── Laporan markers ─────────────────────────────────────────────
+    var laporanData = @json($laporanMapData);
+    var laporanMarkers = [];
+    var laporanLayer = L.layerGroup().addTo(map);
+
+    laporanData.forEach(function(l) {
+        var color = getRisikoBg(l.risiko);
+        var icon = L.divIcon({
+            className: '',
+            html: '<div style="background:' + color + ';width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+        });
+        var m = L.marker([l.lat, l.lng], { icon: icon }).addTo(map)
+            .bindPopup(
+                '<div style="min-width:180px;">' +
+                '<h6 class="fw-bold mb-1" style="font-size:13px;color:#2e8b57;">' + l.kode + '</h6>' +
+                '<div class="small text-muted mb-1"><i class="bi bi-tag"></i> ' + l.kategori + '</div>' +
+                '<div class="small text-muted mb-1"><i class="bi bi-geo-alt"></i> ' + l.lokasi + '</div>' +
+                (l.petugas ? '<div class="small text-muted mb-1"><i class="bi bi-person-badge"></i> ' + l.petugas + '</div>' : '') +
+                '<span class="badge rounded-pill" style="background:' + getStatusColor(l.status) + ';">' + l.label_status + '</span>' +
+                '</div>'
+            );
+        laporanMarkers.push(m);
+        laporanLayer.addLayer(m);
+    });
+
+    // ── Toggle laporan markers ──────────────────────────────────────
+    document.getElementById('tampilkanLaporan').addEventListener('change', function() {
+        if (this.checked) map.addLayer(laporanLayer);
+        else map.removeLayer(laporanLayer);
+    });
+
+    // ── Fit bounds ──────────────────────────────────────────────────
+    var allGroups = L.featureGroup([].concat(petugasMarkers, laporanMarkers));
+    if (allGroups.getLayers().length > 0) {
+        map.fitBounds(allGroups.getBounds().pad(0.08));
     }
 });
 </script>

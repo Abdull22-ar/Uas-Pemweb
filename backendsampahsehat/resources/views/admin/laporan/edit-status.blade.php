@@ -206,8 +206,34 @@
                 </ul>
             </div>
         </div>
+
+        {{-- Map Lokasi --}}
+        @if($laporanSampah->latitude && $laporanSampah->longitude)
+        <div class="card border-0 shadow-sm rounded-4 mt-4">
+            <div class="card-header bg-white p-3 border-bottom">
+                <h6 class="fw-bold mb-0 small"><i class="bi bi-map text-success me-2"></i>Lokasi Pelapor</h6>
+            </div>
+            <div class="card-body p-0">
+                <div id="editStatusMap" style="height: 200px; width: 100%;"></div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
+
+@if($laporanSampah->latitude && $laporanSampah->longitude)
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var map = L.map('editStatusMap', { zoomControl: false }).setView([{{ $laporanSampah->latitude }}, {{ $laporanSampah->longitude }}], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    L.marker([{{ $laporanSampah->latitude }}, {{ $laporanSampah->longitude }}]).addTo(map);
+});
+</script>
+@endif
 
 <script>
 function handleStatusChange(val) {

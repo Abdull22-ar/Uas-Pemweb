@@ -112,6 +112,7 @@
                     <th>Pelapor</th>
                     <th>Kategori & Lokasi</th>
                     <th>Status</th>
+                    <th>Petugas</th>
                     <th>Risiko</th>
                     <th>Tanggal</th>
                     <th class="text-end pe-4">Aksi</th>
@@ -144,6 +145,15 @@
                             };
                         @endphp
                         <span class="badge rounded-pill {{ $badgeClass }}">{{ ucfirst($l->status) }}</span>
+                    </td>
+                    <td>
+                        @if($l->relationLoaded('petugas') && $l->petugas)
+                            <span class="badge bg-light text-dark border px-2 py-1 small">
+                                <i class="bi bi-person-badge me-1 text-secondary"></i>{{ $l->petugas->name }}
+                            </span>
+                        @else
+                            <span class="text-muted small">–</span>
+                        @endif
                     </td>
                     <td>
                         @if($l->kategori)
@@ -184,7 +194,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="8" class="text-center py-5 text-muted">
                         <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
                         <p class="mb-2">Tidak ada laporan yang sesuai filter</p>
                         @if(count($activeFilters))
