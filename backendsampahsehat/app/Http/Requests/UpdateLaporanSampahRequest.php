@@ -7,11 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateLaporanSampahRequest extends FormRequest
 {
     /**
-     * Hanya admin/petugas yang login boleh mengupdate laporan.
+     * Hanya admin yang boleh mengupdate laporan.
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return auth()->check() && auth()->user()->role === 'admin';
     }
 
     /**
@@ -21,7 +21,7 @@ class UpdateLaporanSampahRequest extends FormRequest
     {
         return [
             'nama_pelapor'   => ['sometimes', 'required', 'string', 'min:3', 'max:100'],
-            'kontak_pelapor' => ['sometimes', 'required', 'string', 'max:255'],
+            'kontak_pelapor' => ['sometimes', 'required', 'string', 'max:20'],
             'kategori_id'    => ['sometimes', 'required', 'integer', 'exists:kategori_sampah,id'],
             'lokasi'         => ['sometimes', 'required', 'string', 'min:5', 'max:255'],
             'latitude'       => ['nullable', 'numeric', 'between:-90,90'],

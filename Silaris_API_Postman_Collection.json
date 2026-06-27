@@ -1,0 +1,160 @@
+{
+	"info": {
+		"_postman_id": "c1f7b0e1-1b5b-4c5c-9c7d-8b9a0b1c2d3e",
+		"name": "Silaris API",
+		"description": "Koleksi API Silaris untuk keperluan testing Frontend ke Backend Laravel.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Ambil Data Kategori",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/kategori",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"kategori"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Buat Laporan Baru",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "nama_pelapor",
+							"value": "Budi Postman",
+							"type": "text"
+						},
+						{
+							"key": "kontak_pelapor",
+							"value": "budi@postman.com",
+							"type": "text"
+						},
+						{
+							"key": "kategori_id",
+							"value": "1",
+							"description": "Ganti dengan ID Kategori yang valid (contoh: 1, 2, atau 3)",
+							"type": "text"
+						},
+						{
+							"key": "lokasi",
+							"value": "Jl. Mawar Merah No. 12",
+							"type": "text"
+						},
+						{
+							"key": "deskripsi",
+							"value": "Terdapat tumpukan sampah yang belum diambil selama 3 hari. Ini contoh dari Postman.",
+							"type": "text"
+						},
+						{
+							"key": "latitude",
+							"value": "-6.200000",
+							"type": "text"
+						},
+						{
+							"key": "longitude",
+							"value": "106.816666",
+							"type": "text"
+						},
+						{
+							"key": "foto",
+							"type": "file",
+							"src": [],
+							"description": "Pilih file gambar JPG/PNG jika ingin mengetes upload"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/laporan",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"laporan"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Cek Status Laporan (Berdasarkan Kode)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/laporan/SPH-2406261234",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"laporan",
+						"SPH-2406261234"
+					],
+					"description": "Ganti SPH-2406261234 dengan kode laporan yang Anda dapat dari response POST laporan"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Daftar Laporan Publik",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/laporan-publik?page=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"laporan-publik"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		}
+	]
+}

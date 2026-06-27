@@ -25,6 +25,8 @@ class KategoriSampahController extends Controller
      */
     public function index(Request $request): View
     {
+        abort_unless(in_array(auth()->user()->role, ['admin', 'petugas']), 403, 'Anda tidak memiliki akses.');
+
         $query = KategoriSampah::withCount('laporanSampah');
 
         // Filter pencarian
@@ -59,6 +61,8 @@ class KategoriSampahController extends Controller
      */
     public function create(): View
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat menambah kategori.');
+
         return view('admin.kategori.create');
     }
 
@@ -67,6 +71,8 @@ class KategoriSampahController extends Controller
      */
     public function store(StoreKategoriSampahRequest $request): RedirectResponse
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat menambah kategori.');
+
         KategoriSampah::create($request->validated());
 
         return redirect()
@@ -83,6 +89,8 @@ class KategoriSampahController extends Controller
      */
     public function show(KategoriSampah $kategoriSampah): View
     {
+        abort_unless(in_array(auth()->user()->role, ['admin', 'petugas']), 403);
+
         $laporan = $kategoriSampah
             ->laporanSampah()
             ->latest()
@@ -100,6 +108,8 @@ class KategoriSampahController extends Controller
      */
     public function edit(KategoriSampah $kategoriSampah): View
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat mengedit kategori.');
+
         return view('admin.kategori.edit', compact('kategoriSampah'));
     }
 
@@ -108,6 +118,8 @@ class KategoriSampahController extends Controller
      */
     public function update(UpdateKategoriSampahRequest $request, KategoriSampah $kategoriSampah): RedirectResponse
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat mengedit kategori.');
+
         $kategoriSampah->update($request->validated());
 
         return redirect()
@@ -125,6 +137,8 @@ class KategoriSampahController extends Controller
      */
     public function destroy(KategoriSampah $kategoriSampah): RedirectResponse
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat menghapus kategori.');
+
         // Guard: jangan hapus jika masih punya laporan aktif
         if ($kategoriSampah->laporanSampah()->exists()) {
             return redirect()
@@ -150,6 +164,8 @@ class KategoriSampahController extends Controller
      */
     public function toggleStatus(KategoriSampah $kategoriSampah): RedirectResponse
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat mengubah status kategori.');
+
         $kategoriSampah->update([
             'status_aktif' => ! $kategoriSampah->status_aktif,
         ]);

@@ -42,6 +42,11 @@ class KategoriSampah extends Model
         return $this->hasMany(LaporanSampah::class, 'kategori_id');
     }
 
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'kategori_id');
+    }
+
     // =========================================================================
     // SCOPE QUERY (HELPER)
     // =========================================================================

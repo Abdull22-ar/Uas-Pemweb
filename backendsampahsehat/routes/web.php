@@ -4,6 +4,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KategoriSampahController;
 use App\Http\Controllers\LaporanSampahController;
+use App\Http\Controllers\PemantauanController;
+use App\Http\Controllers\PetugasLokasiController;
 use Illuminate\Support\Facades\Route;
 
 // =============================================================================
@@ -48,6 +50,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::patch('laporan/{laporanSampah}/status', [LaporanSampahController::class, 'updateStatus'])
          ->name('laporan.update-status');
 
+    // 🌟 Lokasi Petugas
+    Route::get('lokasi-saya', [PetugasLokasiController::class, 'edit'])->name('lokasi.edit');
+    Route::post('lokasi-saya', [PetugasLokasiController::class, 'update'])->name('lokasi.update');
+
+    // 🌟 Pemantauan Petugas (Admin)
+    Route::get('pemantauan/petugas', [PemantauanController::class, 'petugas'])->name('pemantauan.petugas');
+
     // Filter cepat laporan
     Route::get('laporan/filter/kategori/{kategoriSampah}', [LaporanSampahController::class, 'byKategori'])
          ->name('laporan.by-kategori');
@@ -55,6 +64,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
          ->name('laporan.by-status');
     Route::get('laporan/filter/risiko/{levelRisiko}', [LaporanSampahController::class, 'byRisiko'])
          ->name('laporan.by-risiko');
+
+    // Inline assign petugas
+    Route::patch('laporan/{laporanSampah}/assign-petugas', [LaporanSampahController::class, 'assignPetugas'])
+         ->name('laporan.assign-petugas');
 });
 
 // Alias: /dashboard -> /admin/dashboard (kemudahan akses)

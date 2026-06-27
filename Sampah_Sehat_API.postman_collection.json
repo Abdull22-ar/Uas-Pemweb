@@ -1,0 +1,200 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "name": "Sampah Sehat API",
+    "description": "Koleksi API untuk aplikasi Pelaporan Sampah (Sampah Sehat).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Publik",
+      "item": [
+        {
+          "name": "1. GET Daftar Laporan Publik",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/laporan-publik",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "laporan-publik"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Mengambil daftar laporan yang sudah disensor datanya untuk ditampilkan di halaman publik."
+          },
+          "response": []
+        },
+        {
+          "name": "2. GET Rekap Laporan Koordinator",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rekap-laporan",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rekap-laporan"
+              ]
+            },
+            "description": "Mengambil data rekapitulasi laporan berdasarkan status, kategori, dan level risiko untuk ditampilkan di menu Koordinator."
+          },
+          "response": []
+        },
+        {
+          "name": "3. GET Cek Status Laporan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/laporan/LPS-20260001",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "laporan",
+                "LPS-20260001"
+              ]
+            },
+            "description": "Mengambil detail status dari satu laporan spesifik menggunakan kode laporan unik. Ganti `LPS-20260001` dengan kode yang valid."
+          },
+          "response": []
+        },
+        {
+          "name": "4. POST Buat Laporan Baru",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "nama_pelapor",
+                  "value": "Budi Santoso",
+                  "type": "text"
+                },
+                {
+                  "key": "kontak_pelapor",
+                  "value": "081234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "kategori_id",
+                  "value": "1",
+                  "type": "text",
+                  "description": "ID kategori sampah (misal: 1 untuk Organik)"
+                },
+                {
+                  "key": "lokasi",
+                  "value": "Jl. Merdeka No. 45, Bandung",
+                  "type": "text"
+                },
+                {
+                  "key": "latitude",
+                  "value": "-6.917464",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "longitude",
+                  "value": "107.619123",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "deskripsi",
+                  "value": "Terdapat tumpukan sampah basah di pinggir jalan dekat tikungan.",
+                  "type": "text"
+                },
+                {
+                  "key": "foto",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/laporan-sampah",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "laporan-sampah"
+              ]
+            },
+            "description": "Mengirimkan data form untuk membuat laporan pengaduan sampah baru."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}

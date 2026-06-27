@@ -10,11 +10,13 @@
         <h2 class="fw-bold mb-1">Kategori Sampah</h2>
         <p class="text-muted mb-0">Kelola kategori dan level risiko sampah</p>
     </div>
+    @if(auth()->user()->role === 'admin')
     <div>
         <a href="{{ route('admin.kategori.create') }}" class="btn btn-primary shadow-sm">
             <i class="bi bi-plus-lg me-2"></i>Tambah Kategori
         </a>
     </div>
+    @endif
 </div>
 
 {{-- ── FILTER BAR ────────────────────────────────────────────── --}}
@@ -124,15 +126,19 @@
                         <span class="badge rounded-pill {{ $risikoClass }}">{{ ucfirst($kat->level_risiko) }}</span>
                     </td>
                     <td>
+                        @if(auth()->user()->role === 'admin')
                         <form method="POST" action="{{ route('admin.kategori.toggle-status', $kat) }}" class="d-inline">
                             @csrf @method('PATCH')
                             <button type="submit" class="btn btn-sm p-0 border-0" title="{{ $kat->status_aktif ? 'Klik untuk nonaktifkan' : 'Klik untuk aktifkan' }}">
+                        @endif
                                 <span class="badge rounded-pill {{ $kat->status_aktif ? 'bg-success' : 'bg-secondary opacity-75' }}">
                                     <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>
                                     {{ $kat->status_aktif ? 'Aktif' : 'Nonaktif' }}
                                 </span>
+                        @if(auth()->user()->role === 'admin')
                             </button>
                         </form>
+                        @endif
                     </td>
                     <td>
                         <span class="fw-bold text-dark">{{ $kat->laporan_sampah_count }}</span>
@@ -143,6 +149,7 @@
                             <a href="{{ route('admin.kategori.show', $kat) }}" class="btn btn-sm btn-outline-secondary" title="Detail">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            @if(auth()->user()->role === 'admin')
                             <a href="{{ route('admin.kategori.edit', $kat) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -152,6 +159,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -160,9 +168,11 @@
                     <td colspan="7" class="text-center py-5 text-muted">
                         <i class="bi bi-tags fs-1 d-block mb-3 opacity-50"></i>
                         <p class="mb-2">Belum ada kategori sampah</p>
+                        @if(auth()->user()->role === 'admin')
                         <a href="{{ route('admin.kategori.create') }}" class="btn btn-sm btn-primary mt-2">
                             <i class="bi bi-plus-lg me-1"></i>Tambah Kategori
                         </a>
+                        @endif
                     </td>
                 </tr>
                 @endforelse

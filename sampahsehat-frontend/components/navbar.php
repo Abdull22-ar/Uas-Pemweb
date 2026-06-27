@@ -116,6 +116,14 @@ require_once __DIR__ . '/../config.php';
                 <li class="nav-item">
                     <a class="nav-link" href="cek-status.php">Cek Status</a>
                 </li>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Koordinator'): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="rekap-laporan.php">Rekap Laporan</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="http://localhost:8000/admin/dashboard">Dashboard</a>
+                </li>
+                <?php endif; ?>
             </ul>
             <div class="d-flex align-items-center">
                 <?php if (isset($_SESSION['user_id'])): ?>

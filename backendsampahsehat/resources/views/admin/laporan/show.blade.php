@@ -81,6 +81,15 @@
                         <div class="text-muted small text-uppercase fw-bold mb-1"><i class="bi bi-shield me-1"></i>Level Risiko</div>
                         <div class="fw-medium text-dark">{{ $laporanSampah->kategori?->label_risiko ?? '–' }}</div>
                     </div>
+                    <div class="col-md-6 border-bottom border-end p-4">
+                        <div class="text-muted small text-uppercase fw-bold mb-1"><i class="bi bi-person-badge me-1"></i>Petugas Penanganan</div>
+                        @if($laporanSampah->relationLoaded('petugas') && $laporanSampah->petugas)
+                            <div class="fw-medium text-dark">{{ $laporanSampah->petugas->name }}</div>
+                            <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $laporanSampah->petugas->kontak ?? '-' }}</div>
+                        @else
+                            <div class="fw-medium text-muted">–</div>
+                        @endif
+                    </div>
                     <div class="col-12 border-bottom p-4">
                         <div class="text-muted small text-uppercase fw-bold mb-1"><i class="bi bi-geo-alt me-1"></i>Lokasi Kejadian</div>
                         <div class="fw-medium text-dark">{{ $laporanSampah->lokasi }}</div>
@@ -134,7 +143,45 @@
                 @endif
             </div>
         </div>
+
+        {{-- Peta Lokasi --}}
+        <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom">
+                <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-map text-success me-2"></i>Peta Lokasi</h6>
+            </div>
+            <div class="card-body p-0">
+                @if($laporanSampah->latitude && $laporanSampah->longitude)
+                    <div id="map" style="height: 250px; width: 100%;"></div>
+                @else
+                    <div class="p-4 text-center text-muted bg-light">
+                        <i class="bi bi-geo-alt fs-1 d-block mb-2 opacity-50"></i>
+                        Koordinat lokasi tidak tersedia
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 </div>
+
+@if($laporanSampah->latitude && $laporanSampah->longitude)
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var lat = {{ $laporanSampah->latitude }};
+    var lng = {{ $laporanSampah->longitude }};
+    
+    var map = L.map('map').setView([lat, lng], 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    
+    L.marker([lat, lng]).addTo(map)
+        .bindPopup('<b>Lokasi Kejadian</b><br>{{ $laporanSampah->lokasi }}')
+        .openPopup();
+});
+</script>
+@endif
 
 @endsection

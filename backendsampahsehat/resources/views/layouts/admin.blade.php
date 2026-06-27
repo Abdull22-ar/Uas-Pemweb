@@ -17,6 +17,12 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <style>
         :root {
             --primary-color: #2e8b57;
@@ -204,15 +210,34 @@
         <img src="{{ asset('logo.png') }}" alt="Logo Silaris">
         <div>
             <div class="brand-text">Silaris</div>
-            <div class="brand-sub">Panel {{ str_contains(strtolower(Auth::user()->email), 'petugas') ? 'Petugas' : 'Admin' }}</div>
+            <div class="brand-sub">Panel {{ auth()->user()->role === 'petugas' ? 'Petugas' : 'Admin' }}</div>
         </div>
     </a>
 
     <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+
         <div class="nav-section-label">Laporan</div>
         <a href="{{ route('admin.laporan.index') }}" class="nav-link {{ request()->routeIs('admin.laporan.*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-text"></i> Manajemen Laporan
         </a>
+
+        @if(auth()->user()->role === 'petugas')
+        <div class="nav-section-label">Petugas</div>
+        <a href="{{ route('admin.lokasi.edit') }}" class="nav-link {{ request()->routeIs('admin.lokasi.*') ? 'active' : '' }}">
+            <i class="bi bi-geo-alt-fill"></i> Lokasi Saya
+        </a>
+        @endif
+
+        @if(auth()->user()->role === 'admin')
+        <div class="nav-section-label">Pemantauan</div>
+        <a href="{{ route('admin.pemantauan.petugas') }}" class="nav-link {{ request()->routeIs('admin.pemantauan.*') ? 'active' : '' }}">
+            <i class="bi bi-people-fill"></i> Petugas Lapangan
+        </a>
+        @endif
 
         <div class="nav-section-label">Master Data</div>
         <a href="{{ route('admin.kategori.index') }}" class="nav-link {{ request()->routeIs('admin.kategori.*') ? 'active' : '' }}">
@@ -234,12 +259,16 @@
         
         <div class="dropdown">
             <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 border" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                @php
+                    $displayName = auth()->user()->name;
+                    $displayRole = auth()->user()->role === 'petugas' ? 'Petugas' : 'Admin';
+                @endphp
                 <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold;">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    {{ strtoupper(substr($displayName, 0, 1)) }}
                 </div>
                 <div class="d-none d-md-block text-start">
-                    <div class="fw-bold" style="font-size: 13px; line-height: 1;">{{ Auth::user()->name }}</div>
-                    <div class="text-muted" style="font-size: 11px;">{{ str_contains(strtolower(Auth::user()->email), 'petugas') ? 'Petugas' : 'Admin' }}</div>
+                    <div class="fw-bold" style="font-size: 13px; line-height: 1;">{{ $displayName }}</div>
+                    <div class="text-muted" style="font-size: 11px;">{{ $displayRole }}</div>
                 </div>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -276,6 +305,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const toggle   = document.getElementById('sidebarToggle');
     const sidebar  = document.getElementById('sidebar');

@@ -80,8 +80,28 @@
                             <div class="text-dark"><i class="bi bi-geo-alt-fill text-danger me-1"></i><?= htmlspecialchars($data['lokasi']) ?></div>
                         </div>
 
+                        <?php if (!empty($data['petugas'])): ?>
                         <div class="mb-3 pb-3 border-bottom">
-                            <div class="fw-bold text-secondary small mb-1">Catatan dari Petugas</div>
+                            <div class="fw-bold text-secondary small mb-1">Ditangani Oleh</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:40px;height:40px;font-size:16px;">
+                                    <?= strtoupper(substr($data['petugas']['nama'], 0, 1)) ?>
+                                </div>
+                                <div>
+                                    <div class="fw-medium text-dark"><?= htmlspecialchars($data['petugas']['nama']) ?></div>
+                                    <?php if (!empty($data['petugas']['spesialisasi'])): ?>
+                                        <div class="small text-muted"><i class="bi bi-tools me-1"></i><?= htmlspecialchars($data['petugas']['spesialisasi']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($data['petugas']['kontak'])): ?>
+                                        <div class="small text-muted"><i class="bi bi-telephone me-1"></i><?= htmlspecialchars($data['petugas']['kontak']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="mb-3 pb-3 border-bottom">
+                            <div class="fw-bold text-secondary small mb-1">Catatan Petugas</div>
                             <?php if (!empty($data['catatan_petugas'])): ?>
                                 <div class="bg-light p-3 rounded-3 text-dark border border-secondary-subtle">
                                     <i class="bi bi-chat-left-quote text-secondary me-2"></i><?= nl2br(htmlspecialchars($data['catatan_petugas'])) ?>

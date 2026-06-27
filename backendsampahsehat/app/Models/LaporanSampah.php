@@ -26,6 +26,7 @@ class LaporanSampah extends Model
         'deskripsi',
         'foto',
         'status',
+        'petugas_id',
         'catatan_petugas',
     ];
 
@@ -41,13 +42,6 @@ class LaporanSampah extends Model
     // BOOT - AUTO-GENERATE KODE LAPORAN
     // =========================================================================
 
-    /**
-     * Boot model: generate kode_laporan otomatis sebelum data disimpan pertama kali.
-     *
-     * Format: SPH-001, SPH-002, ..., SPH-999, SPH-1000, dst.
-     * Nomor urut diambil dari ID tertinggi yang sudah ada agar tidak tabrakan
-     * meski ada data yang dihapus di tengah.
-     */
     protected static function boot(): void
     {
         parent::boot();
@@ -59,16 +53,8 @@ class LaporanSampah extends Model
         });
     }
 
-    /**
-     * Generate kode laporan berikutnya secara aman (race-condition safe).
-     *
-     * Strategi:
-     * 1. Ambil nomor terbesar dari kode_laporan yang ada di DB.
-     * 2. Tambah 1, format dengan padding 3 digit (min), lebih jika perlu.
-     */
     public static function generateKodeLaporan(): string
     {
-        // Generate kode unik berupa SPH-TANGGAL-RANDOM agar terhindar dari race condition
         do {
             $kode = 'SPH-' . date('ymd') . mt_rand(1000, 9999);
         } while (static::where('kode_laporan', $kode)->exists());
@@ -86,6 +72,11 @@ class LaporanSampah extends Model
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(KategoriSampah::class, 'kategori_id');
+    }
+
+    public function petugas(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'petugas_id');
     }
 
     // =========================================================================

@@ -26,7 +26,7 @@
                     <tr>
                         <th class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Kode Laporan</th>
                         <th class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Kategori</th>
-                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Lokasi Singkat</th>
+                        <th class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Petugas</th>
                         <th class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Status</th>
                         <th class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Tanggal</th>
                     </tr>
@@ -39,10 +39,21 @@
                     <?php else: ?>
                         <?php foreach($data as $row): ?>
                             <tr>
-                                <td class="fw-semibold text-dark font-monospace" style="font-size: 0.9rem;"><?= htmlspecialchars($row['kode_laporan']) ?></td>
+                                <td class="fw-semibold text-dark font-monospace" style="font-size: 0.9rem;">
+                                    <?= htmlspecialchars($row['kode_laporan']) ?>
+                                    <button class="btn btn-sm btn-light border-0 py-0 px-1 ms-1 copy-kode" data-kode="<?= htmlspecialchars($row['kode_laporan']) ?>" title="Salin kode laporan" style="font-size:0.75rem;">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </td>
                                 <td><?= htmlspecialchars($row['kategori']) ?></td>
-                                <td class="text-muted" style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i><?= htmlspecialchars($row['lokasi'] ?? 'Tidak diketahui') ?>
+                                <td class="small">
+                                    <?php if (!empty($row['petugas'])): ?>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($row['petugas']) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">–</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php 
@@ -72,4 +83,19 @@
     </div>
 </div>
 
+<script>
+document.querySelectorAll('.copy-kode').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const kode = this.dataset.kode;
+        navigator.clipboard.writeText(kode).then(() => {
+            const icon = this.querySelector('i');
+            const orig = icon.className;
+            icon.className = 'bi bi-check-lg text-success';
+            setTimeout(() => { icon.className = orig; }, 1500);
+        }).catch(() => {
+            alert('Gagal menyalin. Silakan salin manual: ' + kode);
+        });
+    });
+});
+</script>
 <?php include 'components/footer.php'; ?>

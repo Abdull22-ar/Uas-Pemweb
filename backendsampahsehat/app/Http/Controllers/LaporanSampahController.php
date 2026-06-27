@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateLaporanSampahRequest;
 use App\Http\Requests\UpdateStatusLaporanRequest;
 use App\Models\KategoriSampah;
 use App\Models\LaporanSampah;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,17 +23,25 @@ class LaporanSampahController extends Controller
      * Tampilkan daftar laporan dengan filter multi-kriteria.
      *
      * Query params yang didukung:
-     *  - search      : cari kode_laporan, nama_pelapor, atau lokasi
-     *  - kategori_id : filter berdasarkan kategori
-     *  - status      : filter berdasarkan status laporan
-     *  - level_risiko: filter berdasarkan level risiko kategori
-     *  - tanggal_dari: filter laporan dari tanggal (YYYY-MM-DD)
+     *  - search        : cari kode_laporan, nama_pelapor, atau lokasi
+     *  - kategori_id   : filter berdasarkan kategori
+     *  - status        : filter berdasarkan status laporan
+     *  - level_risiko  : filter berdasarkan level risiko kategori
+     *  - tanggal_dari  : filter laporan dari tanggal (YYYY-MM-DD)
      *  - tanggal_sampai: filter laporan sampai tanggal (YYYY-MM-DD)
-     *  - per_page    : jumlah item per halaman (default 15)
+     *  - per_page      : jumlah item per halaman (default 15)
      */
     public function index(Request $request): View
     {
         $query = LaporanSampah::with('kategori')->latest();
+
+        // Petugas hanya melihat laporan sesuai spesialisasi risiko
+        $user = auth()->user();
+        if ($user->role === 'petugas' && $user->spesialis_risiko) {
+            $query->whereHas('kategori', fn($q) =>
+                $q->where('level_risiko', $user->spesialis_risiko)
+            );
+        }
 
         // ── Filter pencarian teks ──────────────────────────────────────────
         if ($search = $request->input('search')) {
@@ -70,8 +79,8 @@ class LaporanSampahController extends Controller
             $query->whereDate('created_at', '<=', $tanggalSampai);
         }
 
-        $perPage  = min((int) $request->input('per_page', 15), 100); // max 100
-        $laporan  = $query->paginate($perPage)->withQueryString();
+        $perPage = max(1, min((int) $request->input('per_page', 15), 100));
+        $laporan = $query->paginate($perPage)->withQueryString();
 
         // Data untuk dropdown filter
         $kategoriList = KategoriSampah::aktif()->orderBy('nama_kategori')->get();
@@ -123,7 +132,13 @@ class LaporanSampahController extends Controller
      */
     public function show(LaporanSampah $laporanSampah): View
     {
-        $laporanSampah->load('kategori');
+        $user = auth()->user();
+        if ($user->role === 'petugas' && $user->spesialis_risiko) {
+            $allowed = $laporanSampah->kategori?->level_risiko === $user->spesialis_risiko;
+            abort_unless($allowed, 403, 'Anda tidak memiliki akses ke laporan ini.');
+        }
+
+        $laporanSampah->load('kategori', 'petugas');
 
         return view('admin.laporan.show', compact('laporanSampah'));
     }
@@ -137,6 +152,8 @@ class LaporanSampahController extends Controller
      */
     public function edit(LaporanSampah $laporanSampah): View
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat mengedit laporan.');
+
         $kategoriList = KategoriSampah::aktif()->orderBy('nama_kategori')->get();
 
         return view('admin.laporan.edit', compact('laporanSampah', 'kategoriList'));
@@ -158,7 +175,7 @@ class LaporanSampahController extends Controller
         }
 
         // Hapus foto jika user memilih opsi "hapus foto"
-        if ($request->boolean('hapus_foto') && $laporanSampah->foto) {
+        if ($request->boolean('hapus_foto') && $laporanSampah->foto && !$request->hasFile('foto')) {
             Storage::disk('public')->delete($laporanSampah->foto);
             $data['foto'] = null;
         }
@@ -179,6 +196,8 @@ class LaporanSampahController extends Controller
      */
     public function destroy(LaporanSampah $laporanSampah): RedirectResponse
     {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat menghapus laporan.');
+
         $kode = $laporanSampah->kode_laporan;
 
         // Hapus file foto dari storage
@@ -202,9 +221,34 @@ class LaporanSampahController extends Controller
      */
     public function editStatus(LaporanSampah $laporanSampah): View
     {
-        $laporanSampah->load('kategori');
+        $laporanSampah->load('kategori', 'petugas');
 
-        return view('admin.laporan.edit-status', compact('laporanSampah'));
+        $user = auth()->user();
+        if ($user->role === 'petugas' && $user->spesialis_risiko) {
+            $allowed = $laporanSampah->kategori?->level_risiko === $user->spesialis_risiko;
+            abort_unless($allowed, 403, 'Anda tidak memiliki akses ke laporan ini.');
+        }
+
+        // Petugas lapangan (assignable) per level risiko
+        $petugasRendah = User::where('role', 'petugas')
+            ->where('spesialis_risiko', 'rendah')
+            ->where('email', '!=', 'petugas_rendah@Silaris.id')
+            ->whereNotNull('kontak')
+            ->get(['id', 'name', 'kontak', 'lokasi']);
+
+        $petugasSedang = User::where('role', 'petugas')
+            ->where('spesialis_risiko', 'sedang')
+            ->where('email', '!=', 'petugas_sedang@Silaris.id')
+            ->whereNotNull('kontak')
+            ->get(['id', 'name', 'kontak', 'lokasi']);
+
+        $petugasTinggi = User::where('role', 'petugas')
+            ->where('spesialis_risiko', 'tinggi')
+            ->where('email', '!=', 'petugas_tinggi@Silaris.id')
+            ->whereNotNull('kontak')
+            ->get(['id', 'name', 'kontak', 'lokasi']);
+
+        return view('admin.laporan.edit-status', compact('laporanSampah', 'petugasRendah', 'petugasSedang', 'petugasTinggi'));
     }
 
     /**
@@ -217,9 +261,21 @@ class LaporanSampahController extends Controller
     public function updateStatus(UpdateStatusLaporanRequest $request, LaporanSampah $laporanSampah): RedirectResponse
     {
         $statusLama = $laporanSampah->status;
-        $statusBaru = $request->validated()['status'];
+        $data = $request->validated();
+        
+        $statusBaru = $data['status'];
 
-        $laporanSampah->update($request->validated());
+        // Petugas wajib dipilih jika status diproses untuk semua level risiko
+        $level = $laporanSampah->kategori?->level_risiko;
+        if ($statusBaru === 'diproses' && in_array($level, ['rendah', 'sedang', 'tinggi'])) {
+            $request->validate(['petugas_id' => 'required|exists:users,id']);
+        }
+
+        if ($request->filled('petugas_id')) {
+            $data['petugas_id'] = $request->petugas_id;
+        }
+
+        $laporanSampah->update($data);
 
         $pesan = "Status laporan {$laporanSampah->kode_laporan} berhasil diubah dari '{$statusLama}' menjadi '{$statusBaru}'.";
 
@@ -233,70 +289,48 @@ class LaporanSampahController extends Controller
     // =========================================================================
 
     /**
-     * Filter laporan berdasarkan kategori tertentu.
-     * Shortcut dari index dengan pre-fill filter kategori_id.
-     */
-    public function byKategori(KategoriSampah $kategoriSampah): View
-    {
-        $laporan = LaporanSampah::with('kategori')
-            ->where('kategori_id', $kategoriSampah->id)
-            ->latest()
-            ->paginate(15);
-
-        $kategoriList = KategoriSampah::aktif()->orderBy('nama_kategori')->get();
-
-        return view('admin.laporan.index', compact('laporan', 'kategoriList'))
-            ->with('filterKategori', $kategoriSampah);
-    }
-
-    /**
      * Filter laporan berdasarkan status tertentu.
      * Shortcut dari dashboard untuk melihat detail laporan per-status.
      */
-    public function byStatus(string $status): View|RedirectResponse
+    public function byStatus(string $status): RedirectResponse
     {
-        $statusValid = ['baru', 'diproses', 'selesai', 'ditolak'];
-
-        if (! in_array($status, $statusValid)) {
-            return redirect()
-                ->route('admin.laporan.index')
-                ->with('error', 'Status tidak valid.');
-        }
-
-        $laporan = LaporanSampah::with('kategori')
-            ->where('status', $status)
-            ->latest()
-            ->paginate(15);
-
-        $kategoriList = KategoriSampah::aktif()->orderBy('nama_kategori')->get();
-
-        return view('admin.laporan.index', compact('laporan', 'kategoriList'))
-            ->with('filterStatus', $status);
+        return redirect()->route('admin.laporan.index', ['status' => $status]);
     }
 
     /**
-     * Filter laporan berdasarkan level risiko kategori.
-     * Berguna untuk penanganan prioritas (tampilkan risiko tinggi duluan).
+     * Filter laporan berdasarkan kategori tertentu.
+     * Shortcut dari sidebar/dashboard.
      */
-    public function byRisiko(string $levelRisiko): View|RedirectResponse
+    public function byKategori(KategoriSampah $kategoriSampah): RedirectResponse
     {
-        $levelValid = ['rendah', 'sedang', 'tinggi'];
+        return redirect()->route('admin.laporan.index', ['kategori_id' => $kategoriSampah->id]);
+    }
 
-        if (! in_array($levelRisiko, $levelValid)) {
-            return redirect()
-                ->route('admin.laporan.index')
-                ->with('error', 'Level risiko tidak valid.');
-        }
+    /**
+     * Filter laporan berdasarkan level risiko kategori (misal: "tinggi").
+     */
+    public function byRisiko(string $levelRisiko): RedirectResponse
+    {
+        return redirect()->route('admin.laporan.index', ['level_risiko' => $levelRisiko]);
+    }
 
-        $laporan = LaporanSampah::with('kategori')
-            ->whereHas('kategori', fn ($q) => $q->where('level_risiko', $levelRisiko))
-            ->latest()
-            ->paginate(15);
+    // =========================================================================
+    // INLINE ASSIGN PETUGAS
+    // =========================================================================
 
-        $kategoriList = KategoriSampah::aktif()->orderBy('nama_kategori')->get();
+    public function assignPetugas(Request $request, LaporanSampah $laporanSampah): RedirectResponse
+    {
+        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat menugaskan petugas.');
 
-        return view('admin.laporan.index', compact('laporan', 'kategoriList'))
-            ->with('filterRisiko', $levelRisiko);
+        $request->validate(['petugas_id' => 'nullable|exists:users,id']);
+
+        $laporanSampah->update(['petugas_id' => $request->petugas_id]);
+
+        $pesan = $request->petugas_id
+            ? "Petugas berhasil ditugaskan ke laporan {$laporanSampah->kode_laporan}."
+            : "Penugasan petugas untuk laporan {$laporanSampah->kode_laporan} telah dihapus.";
+
+        return redirect()->back()->with('success', $pesan);
     }
 
     // =========================================================================

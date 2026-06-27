@@ -32,6 +32,10 @@ class UpdateStatusLaporanRequest extends FormRequest
                 // Jika status 'ditolak', catatan wajib diisi sebagai alasan penolakan
                 Rule::requiredIf(fn () => $this->input('status') === 'ditolak'),
             ],
+            'petugas_id' => [
+                'nullable',
+                Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'petugas')),
+            ],
         ];
     }
 

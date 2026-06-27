@@ -21,7 +21,7 @@ class StoreLaporanSampahRequest extends FormRequest
     {
         return [
             'nama_pelapor'   => ['required', 'string', 'min:3', 'max:100'],
-            'kontak_pelapor' => ['required', 'string', 'max:255'],
+            'kontak_pelapor' => ['required', 'string', 'max:20'],
             'kategori_id'    => [
                 'required',
                 'integer',
@@ -30,7 +30,7 @@ class StoreLaporanSampahRequest extends FormRequest
             'lokasi'         => ['required', 'string', 'min:5', 'max:255'],
             'latitude'       => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'      => ['nullable', 'numeric', 'between:-180,180'],
-            'deskripsi'      => ['required', 'string', 'min:5'],
+            'deskripsi'      => ['required', 'string'],
             'foto'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
@@ -52,7 +52,6 @@ class StoreLaporanSampahRequest extends FormRequest
             'latitude.between'         => 'Nilai latitude tidak valid (-90 hingga 90).',
             'longitude.between'        => 'Nilai longitude tidak valid (-180 hingga 180).',
             'deskripsi.required'       => 'Deskripsi laporan wajib diisi.',
-            'deskripsi.min'            => 'Deskripsi minimal 5 karakter.',
             'foto.image'               => 'File yang diunggah harus berupa gambar.',
             'foto.mimes'               => 'Format foto harus jpg, jpeg, png, atau webp.',
             'foto.max'                 => 'Ukuran foto maksimal 2 MB.',

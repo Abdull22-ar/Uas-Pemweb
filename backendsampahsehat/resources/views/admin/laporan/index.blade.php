@@ -168,6 +168,7 @@
                             <a href="{{ route('admin.laporan.edit-status', $l) }}" class="btn btn-sm btn-outline-warning" title="Update Status">
                                 <i class="bi bi-arrow-repeat"></i>
                             </a>
+                            @if(auth()->user()->role === 'admin')
                             <a href="{{ route('admin.laporan.edit', $l) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -177,6 +178,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>

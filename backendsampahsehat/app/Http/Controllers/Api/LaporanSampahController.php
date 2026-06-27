@@ -97,6 +97,14 @@ class LaporanSampahController extends Controller
             ];
         }
 
+        if ($laporan->relationLoaded('petugas') && $laporan->petugas) {
+            $data['petugas'] = [
+                'nama'         => $laporan->petugas->name,
+                'kontak'       => $laporan->petugas->kontak,
+                'spesialisasi' => $laporan->petugas->lokasi,
+            ];
+        }
+
         return $data;
     }
 
@@ -107,20 +115,26 @@ class LaporanSampahController extends Controller
 
     public function laporanPublik(Request $request): JsonResponse
     {
-        $query = LaporanSampah::with('kategori')->latest();
+        $query = LaporanSampah::with('kategori', 'petugas')->latest();
 
-        $perPage = min((int) $request->input('per_page', 15), 100);
+        $perPage = max(1, min((int) $request->input('per_page', 15), 100));
         $result  = $query->paginate($perPage);
 
         $data = collect($result->items())
             ->map(function ($l) {
-                return [
+                $item = [
                     'kode_laporan'  => $l->kode_laporan,
                     'kategori'      => $l->kategori ? $l->kategori->nama_kategori : '-',
                     'status'        => $l->status,
                     'label_status'  => $l->label_status,
+                    'lokasi'        => $l->lokasi,
+                    'koordinat'     => $l->koordinat,
                     'dibuat_pada'   => $l->created_at?->toIso8601String(),
                 ];
+                if ($l->relationLoaded('petugas') && $l->petugas) {
+                    $item['petugas'] = $l->petugas->name;
+                }
+                return $item;
             })
             ->values();
 
@@ -153,7 +167,7 @@ class LaporanSampahController extends Controller
      *   - lokasi         : string, wajib, min 5 karakter
      *   - latitude       : float, opsional, -90 s/d 90
      *   - longitude      : float, opsional, -180 s/d 180
-     *   - deskripsi      : string, wajib, min 10 karakter
+     *   - deskripsi      : string, wajib
      *   - foto           : file gambar, opsional, maks 2MB (jpg/jpeg/png/webp)
      *
      * Response 201 Created:
@@ -175,7 +189,7 @@ class LaporanSampahController extends Controller
         // ── Validasi Input ─────────────────────────────────────────────────
         $validator = Validator::make($request->all(), [
             'nama_pelapor'   => ['required', 'string', 'min:3', 'max:100'],
-            'kontak_pelapor' => ['required', 'string', 'max:255'],
+            'kontak_pelapor' => ['required', 'string', 'max:20'],
             'kategori_id'    => [
                 'required',
                 'integer',
@@ -184,7 +198,7 @@ class LaporanSampahController extends Controller
             'lokasi'         => ['required', 'string', 'min:5', 'max:255'],
             'latitude'       => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'      => ['nullable', 'numeric', 'between:-180,180'],
-            'deskripsi'      => ['required', 'string', 'min:5'],
+            'deskripsi'      => ['required', 'string'],
             'foto'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ], [
             'nama_pelapor.required'    => 'Nama pelapor wajib diisi.',
@@ -197,7 +211,6 @@ class LaporanSampahController extends Controller
             'latitude.between'         => 'Nilai latitude tidak valid (-90 s/d 90).',
             'longitude.between'        => 'Nilai longitude tidak valid (-180 s/d 180).',
             'deskripsi.required'       => 'Deskripsi laporan wajib diisi.',
-            'deskripsi.min'            => 'Deskripsi minimal 5 karakter.',
             'foto.image'               => 'File harus berupa gambar.',
             'foto.mimes'               => 'Format foto: jpg, jpeg, png, atau webp.',
             'foto.max'                 => 'Ukuran foto maksimal 2 MB.',
@@ -254,7 +267,7 @@ class LaporanSampahController extends Controller
      */
     public function show(string $kodeLaporan): JsonResponse
     {
-        $laporan = LaporanSampah::with('kategori')
+        $laporan = LaporanSampah::with('kategori', 'petugas')
             ->where('kode_laporan', strtoupper(trim($kodeLaporan)))
             ->first();
 

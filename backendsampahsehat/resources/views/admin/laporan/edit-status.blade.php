@@ -97,6 +97,53 @@
                         <div class="form-text mt-2" id="catatanHint">Catatan ini akan ditampilkan kepada pelapor.</div>
                     </div>
 
+                    {{-- Petugas Lapangan (khusus rendah / sedang / tinggi) --}}
+                    @php $levelRisiko = $laporanSampah->kategori?->level_risiko; @endphp
+                    @if(in_array($levelRisiko, ['rendah', 'sedang', 'tinggi']))
+                    <div class="mb-4" id="petugasSection" style="display:none;">
+                        <label class="form-label fw-bold text-dark">Petugas Penanganan <span class="text-danger">*</span></label>
+                        <p class="text-muted small mb-3">Pilih petugas yang akan menangani laporan ini beserta bidangnya:</p>
+                        <div class="d-flex flex-column gap-2" id="petugasOptions">
+                            @php
+                                $petugasList = match($levelRisiko) {
+                                    'rendah' => $petugasRendah,
+                                    'sedang' => $petugasSedang,
+                                    'tinggi' => $petugasTinggi,
+                                };
+                            @endphp
+                            @foreach($petugasList as $p)
+                            @php
+                                $inisial = strtoupper(substr($p->name, 0, 1));
+                                $warnaBg = match($loop->index % 4) { 0 => '#2e8b57', 1 => '#0d6efd', 2 => '#6f42c1', 3 => '#e67e22' };
+                            @endphp
+                            <label class="form-check p-3 border rounded-3 m-0 petugas-option cursor-pointer transition-all" style="cursor:pointer;border-left:4px solid {{ $warnaBg }};">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0 flex-shrink-0" type="radio" name="petugas_id" value="{{ $p->id }}"
+                                        {{ old('petugas_id', $laporanSampah->petugas_id) == $p->id ? 'checked' : '' }}
+                                        style="width:1.25em;height:1.25em;">
+                                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style="width:40px;height:40px;background:{{ $warnaBg }};font-size:16px;">
+                                            {{ $inisial }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark" style="font-size:14px;">{{ $p->name }}</div>
+                                            <div class="d-flex gap-3 small text-muted">
+                                                <span><i class="bi bi-tools me-1"></i>{{ $p->lokasi ?? $levelRisiko }}</span>
+                                                <span><i class="bi bi-telephone me-1"></i>{{ $p->kontak }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                            @endforeach
+                        </div>
+                        @error('petugas_id')
+                            <div class="text-danger small mt-2"><i class="bi bi-exclamation-circle me-1"></i>{{ $message }}</div>
+                        @enderror
+                        <div class="form-text mt-2">Pilih petugas yang akan ditugaskan menangani laporan ini.</div>
+                    </div>
+                    @endif
+
                     <div class="pt-3 border-top mt-4">
                         <button type="submit" class="btn btn-primary px-4 py-2 shadow-sm">
                             <i class="bi bi-check-lg me-2"></i>Simpan Perubahan Status
@@ -139,6 +186,17 @@
                             <div class="text-dark"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ $laporanSampah->lokasi }}</div>
                         </div>
                     </li>
+                    <li class="list-group-item p-3 d-flex justify-content-between align-items-start">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold text-muted small text-uppercase">Petugas</div>
+                            @if($laporanSampah->relationLoaded('petugas') && $laporanSampah->petugas)
+                                <div class="text-dark">{{ $laporanSampah->petugas->name }}</div>
+                                <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $laporanSampah->petugas->kontak ?? '-' }}</div>
+                            @else
+                                <div class="text-muted">–</div>
+                            @endif
+                        </div>
+                    </li>
                     <li class="list-group-item p-3">
                         <div class="ms-2">
                             <div class="fw-bold text-muted small text-uppercase mb-1">Deskripsi Singkat</div>
@@ -157,6 +215,8 @@ function handleStatusChange(val) {
     const opt = document.getElementById('catatanOptional');
     const hint = document.getElementById('catatanHint');
     const textarea = document.getElementById('catatan_petugas');
+    const petugasSection = document.getElementById('petugasSection');
+    const petugasRadios = document.querySelectorAll('input[name="petugas_id"]');
 
     if (val === 'ditolak') {
         req.style.display = 'inline';
@@ -176,7 +236,17 @@ function handleStatusChange(val) {
         hint.textContent = 'Catatan ini akan ditampilkan kepada pelapor.';
     }
 
-    // Update styles for radio options
+    // Tampilkan/sembunyikan petugas section
+    if (petugasSection) {
+        if (val === 'diproses') {
+            petugasSection.style.display = 'block';
+            if (petugasRadios.length) petugasRadios.forEach(r => r.required = true);
+        } else {
+            petugasSection.style.display = 'none';
+            if (petugasRadios.length) petugasRadios.forEach(r => r.required = false);
+        }
+    }
+
     document.querySelectorAll('.status-option').forEach(el => {
         const radio = el.querySelector('input[type="radio"]');
         if(radio.checked) {
@@ -188,7 +258,6 @@ function handleStatusChange(val) {
     });
 }
 
-// Init on load
 document.addEventListener('DOMContentLoaded', () => {
     const selected = document.querySelector('input[name="status"]:checked');
     if (selected) handleStatusChange(selected.value);
