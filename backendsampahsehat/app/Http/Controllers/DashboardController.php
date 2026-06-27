@@ -87,22 +87,6 @@ class DashboardController extends Controller
                 'pelapor'    => $l->nama_pelapor,
             ]);
 
-        // ── Data laporan harian (7 hari terakhir) ──────────────────────────
-        $laporanHarian = (clone $laporanQuery)
-            ->select(DB::raw("DATE(created_at) as tgl"), DB::raw('count(*) as total'))
-            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->groupBy('tgl')
-            ->orderBy('tgl')
-            ->pluck('total', 'tgl');
-
-        $chartLabels = [];
-        $chartData   = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $tglKey = now()->subDays($i)->format('Y-m-d');
-            $chartLabels[] = now()->subDays($i)->format('D, d M');
-            $chartData[]   = $laporanHarian[$tglKey] ?? 0;
-        }
-
         // ── Kategori per level risiko ──────────────────────────────────────
         $kategoriPerRisiko = [];
         foreach (['rendah', 'sedang', 'tinggi'] as $level) {
@@ -145,6 +129,16 @@ class DashboardController extends Controller
                 ->get();
         }
 
+        // ── Laporan harian petugas (khusus petugas login) ─────────────────
+        $laporanHarianPetugas = collect();
+        if ($user->role === 'petugas') {
+            $laporanHarianPetugas = LaporanSampah::with('kategori')
+                ->where('petugas_id', $user->id)
+                ->whereDate('created_at', today())
+                ->latest()
+                ->get();
+        }
+
         // ── Data petugas dengan lokasi (untuk peta) ─────────────────────────
         $petugasMapData = collect();
         if ($user->role === 'admin') {
@@ -176,11 +170,10 @@ class DashboardController extends Controller
             'laporanTerbaru',
             'laporanRisikoTinggiAktif',
             'laporanMapData',
-            'chartLabels',
-            'chartData',
             'kategoriPerRisiko',
             'penangananHarian',
             'laporanDiprosesPetugas',
+            'laporanHarianPetugas',
             'petugasMapData',
         ));
     }

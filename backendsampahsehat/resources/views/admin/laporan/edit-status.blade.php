@@ -154,7 +154,7 @@
         </div>
     </div>
 
-    {{-- Ringkasan Detail --}}
+    {{-- Ringkasan Detail + Map --}}
     <div class="col-lg-5">
         <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 85px;">
             <div class="card-header bg-white p-3 border-bottom">
@@ -203,21 +203,14 @@
                             <div class="text-dark small">{{ Str::limit($laporanSampah->deskripsi, 100) }}</div>
                         </div>
                     </li>
+                    @if($laporanSampah->latitude && $laporanSampah->longitude)
+                    <li class="list-group-item p-0">
+                        <div id="editStatusMap" style="height: 200px; width: 100%; border-radius: 0 0 var(--bs-card-inner-border-radius, 0.375rem) var(--bs-card-inner-border-radius, 0.375rem);"></div>
+                    </li>
+                    @endif
                 </ul>
             </div>
         </div>
-
-        {{-- Map Lokasi --}}
-        @if($laporanSampah->latitude && $laporanSampah->longitude)
-        <div class="card border-0 shadow-sm rounded-4 mt-4">
-            <div class="card-header bg-white p-3 border-bottom">
-                <h6 class="fw-bold mb-0 small"><i class="bi bi-map text-success me-2"></i>Lokasi Pelapor</h6>
-            </div>
-            <div class="card-body p-0">
-                <div id="editStatusMap" style="height: 200px; width: 100%;"></div>
-            </div>
-        </div>
-        @endif
     </div>
 </div>
 

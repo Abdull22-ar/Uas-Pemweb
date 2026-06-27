@@ -144,10 +144,10 @@
     </div>
 </div>
 
-{{-- ── KATEGORI PER RISIKO + CHART HARIAN ─────────────────────── --}}
+{{-- ── KATEGORI PER RISIKO ─────────────────────────────────────── --}}
 <div class="row g-4 mb-4">
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm h-100">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">
                 <h6 class="fw-bold mb-0"><i class="bi bi-tags-fill" style="color:#6f42c1;"></i> Kategori per Level Risiko</h6>
             </div>
@@ -213,17 +213,57 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3">
-                <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Laporan Harian (7 Hari)</h6>
-            </div>
-            <div class="card-body d-flex align-items-center">
-                <canvas id="harianChart" height="220"></canvas>
-            </div>
-        </div>
-    </div>
 </div>
+
+{{-- ── LAPORAN HARIAN PETUGAS (Petugas login) ─────────────────── --}}
+@if(auth()->user()->role === 'petugas')
+<div class="card border-0 shadow-sm mb-4 border-start border-primary border-4">
+    <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+        <i class="bi bi-journal-text text-primary fs-5"></i>
+        <h6 class="fw-bold mb-0">Laporan Harian Saya</h6>
+        <span class="badge bg-primary rounded-pill ms-1">{{ $laporanHarianPetugas->count() }}</span>
+        <span class="text-muted small ms-2">Hari ini, {{ now()->format('d M Y') }}</span>
+    </div>
+    @if($laporanHarianPetugas->isNotEmpty())
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4 py-2 small">Kode</th>
+                    <th class="py-2 small">Pelapor</th>
+                    <th class="py-2 small">Kategori</th>
+                    <th class="py-2 small">Status</th>
+                    <th class="text-end pe-4 py-2 small">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="border-top-0">
+                @foreach($laporanHarianPetugas as $l)
+                <tr>
+                    <td class="ps-4"><span class="font-monospace small text-primary">{{ $l->kode_laporan }}</span></td>
+                    <td class="small">{{ Str::limit($l->nama_pelapor, 18) }}</td>
+                    <td class="small">{{ $l->kategori?->nama_kategori ?? '-' }}</td>
+                    <td>
+                        @php
+                            $bc = match($l->status) { 'baru' => 'bg-info text-dark', 'diproses' => 'bg-warning text-dark', 'selesai' => 'bg-success', 'ditolak' => 'bg-danger', default => 'bg-secondary' };
+                        @endphp
+                        <span class="badge rounded-pill {{ $bc }}">{{ $l->label_status }}</span>
+                    </td>
+                    <td class="text-end pe-4">
+                        <a href="{{ route('admin.laporan.show', $l) }}" class="btn btn-sm btn-light border"><i class="bi bi-eye"></i></a>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @else
+    <div class="card-body text-center py-4 text-muted small">
+        <i class="bi bi-inbox fs-3 d-block mb-2 text-muted"></i>
+        Belum ada laporan yang ditugaskan kepada Anda hari ini.
+    </div>
+    @endif
+</div>
+@endif
 
 {{-- ── LAPORAN TERBARU + PENANGANAN HARIAN ────────────────────── --}}
 <div class="row g-4 mb-4">
@@ -562,32 +602,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (v === 'all' || m._d.status === v) { if (!map.hasLayer(m)) map.addLayer(m); }
             else { map.removeLayer(m); }
         });
-    });
-
-    // Chart Harian
-    var ctx = document.getElementById('harianChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: @json($chartLabels),
-            datasets: [{
-                label: 'Laporan Masuk',
-                data: @json($chartData),
-                backgroundColor: 'rgba(46,139,87,0.6)',
-                borderColor: 'rgba(46,139,87,1)',
-                borderWidth: 2,
-                borderRadius: 4,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
-                x: { grid: { display: false }, ticks: { font: { size: 9 } } }
-            }
-        }
     });
 });
 </script>
