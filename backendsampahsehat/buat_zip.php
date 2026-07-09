@@ -1,16 +1,17 @@
 <?php
 /**
  * Script untuk membuat ZIP dari project dan memecahnya menjadi beberapa part
- * (Maksimal 9MB per file) agar bisa diupload ke InfinityFree.
+ * (Maksimal 10MB per file) agar bisa diupload ke InfinityFree.
  * 
- * Menggunakan PHP ZipArchive (cross-platform, tidak bergantung pada tar.exe)
+ * OPTIMIZED VERSION - Menggunakan RecursiveDirectoryIterator dan hash-based exclusion
+ * untuk performa lebih cepat.
  */
 
 ini_set('max_execution_time', 600); // Waktu eksekusi 10 menit
 ini_set('memory_limit', '512M');
 
 $zipFileName = 'project.zip';
-$chunkSize = 9 * 1024 * 1024; // 9MB (InfinityFree memiliki limit upload 10MB)
+$chunkSize = 10 * 1024 * 1024; // 10MB (InfinityFree memiliki limit upload 10MB)
 
 // Bersihkan file ZIP dan part-file yang sudah ada
 function cleanUpOldFiles($zipName) {
@@ -30,6 +31,7 @@ function cleanUpOldFiles($zipName) {
 cleanUpOldFiles($zipFileName);
 
 echo "Memulai proses kompresi...\n";
+$startTime = microtime(true);
 
 // ============================================================
 // FILE/FOLDER YANG TIDAK DIikutkan DALAM ZIP DEPLOYMENT
@@ -75,7 +77,8 @@ $excludeFiles = [
     // --- Environment (lokal) ---
     '.env',
     '.env.local',
-    '.env.example',
+    // '.env.example', // Include .env.example for deployment
+    // '.env.infinityfree', // Include .env.infinityfree for deployment
 
     // --- Testing ---
     'phpunit.xml',
@@ -95,6 +98,7 @@ $excludeFiles = [
     'update_table.py',
     'generate_key.php',
     'check_error.php',
+    'update.php',
 
     // --- SQLite (server pakai MySQL) ---
     'database/database.sqlite',
@@ -117,6 +121,10 @@ $excludePathPatterns = [
     'resources/js/',   // Sudah dicompile ke public/build
 ];
 
+// OPTIMIZATION: Convert arrays to hash sets for O(1) lookups
+$excludeFoldersSet = array_flip($excludeFolders);
+$excludeFilesSet = array_flip($excludeFiles);
+
 // ============================================================
 // FILE/FOLDER YANG ISI-NYA DI-EXCLUDE TAPI FOLDER HARUS TETAP ADA
 // (Akan dibuatkan .gitkeep sebagai placeholder)
@@ -133,32 +141,28 @@ $emptyButRequired = [
 ];
 
 /**
- * Cek apakah file/folder harus di-exclude
+ * Cek apakah file/folder harus di-exclude (OPTIMIZED dengan hash sets)
  */
-function shouldExclude($relativePath, $excludeFolders, $excludeFiles, $excludePatterns, $excludePathPatterns) {
+function shouldExclude($relativePath, $excludeFoldersSet, $excludeFilesSet, $excludePatterns, $excludePathPatterns) {
     // Normalize separator
     $relativePath = str_replace('\\', '/', $relativePath);
     
-    // Cek folder exclusion (apakah path dimulai dengan atau mengandung folder yang di-exclude)
-    foreach ($excludeFolders as $folder) {
-        if ($relativePath === $folder || strpos($relativePath, $folder . '/') === 0) {
-            return true;
-        }
-        // Cek apakah ada di sub-path (e.g., public/storage)
-        if (strpos($relativePath, '/' . $folder . '/') !== false || substr($relativePath, -strlen('/' . $folder)) === '/' . $folder) {
-            // Hanya exclude jika match exact folder
-        }
+    // Cek folder exclusion menggunakan hash set O(1)
+    $pathParts = explode('/', $relativePath);
+    $firstPart = $pathParts[0];
+    if (isset($excludeFoldersSet[$firstPart]) || isset($excludeFoldersSet[$relativePath])) {
+        return true;
     }
     
-    // Cek file spesifik
-    if (in_array($relativePath, $excludeFiles)) {
+    // Cek file spesifik menggunakan hash set O(1)
+    if (isset($excludeFilesSet[$relativePath])) {
         return true;
     }
     
     // Cek pattern (ekstensi / wildcard sederhana)
+    $basename = basename($relativePath);
     foreach ($excludePatterns as $pattern) {
         // Cek apakah filename berakhir dengan pattern
-        $basename = basename($relativePath);
         if (substr($basename, -strlen($pattern)) === $pattern) {
             return true;
         }
@@ -176,22 +180,22 @@ function shouldExclude($relativePath, $excludeFolders, $excludeFiles, $excludePa
     }
     
     // Exclude file-file log besar
-    if (basename($relativePath) === 'laravel.log') {
+    if ($basename === 'laravel.log') {
         return true;
     }
     
     // Exclude session files (random hash filenames di storage/framework/sessions)
-    if (strpos($relativePath, 'storage/framework/sessions/') === 0 && basename($relativePath) !== '.gitignore' && basename($relativePath) !== '.gitkeep') {
+    if (strpos($relativePath, 'storage/framework/sessions/') === 0 && $basename !== '.gitignore' && $basename !== '.gitkeep') {
         return true;
     }
     
     // Exclude compiled views di storage/framework/views (file .php acak)
-    if (strpos($relativePath, 'storage/framework/views/') === 0 && basename($relativePath) !== '.gitignore' && basename($relativePath) !== '.gitkeep') {
+    if (strpos($relativePath, 'storage/framework/views/') === 0 && $basename !== '.gitignore' && $basename !== '.gitkeep') {
         return true;
     }
     
     // Exclude cache data files
-    if (strpos($relativePath, 'storage/framework/cache/data/') === 0 && basename($relativePath) !== '.gitignore' && basename($relativePath) !== '.gitkeep') {
+    if (strpos($relativePath, 'storage/framework/cache/data/') === 0 && $basename !== '.gitignore' && $basename !== '.gitkeep') {
         return true;
     }
     
@@ -199,46 +203,54 @@ function shouldExclude($relativePath, $excludeFolders, $excludeFiles, $excludePa
 }
 
 /**
- * Rekursif scan direktori dan tambahkan ke ZIP
+ * OPTIMIZED: Scan direktori menggunakan RecursiveDirectoryIterator dan tambahkan ke ZIP
+ * Jauh lebih cepat daripada scandir() rekursif
  */
-function addDirectoryToZip(ZipArchive $zip, $baseDir, $currentDir, $excludeFolders, $excludeFiles, $excludePatterns, $excludePathPatterns, &$fileCount) {
-    $items = scandir($currentDir);
-    foreach ($items as $item) {
-        if ($item === '.' || $item === '..') continue;
-        
-        $fullPath = $currentDir . DIRECTORY_SEPARATOR . $item;
-        $relativePath = str_replace($baseDir . DIRECTORY_SEPARATOR, '', $fullPath);
-        $relativePath = str_replace('\\', '/', $relativePath);
-        
-        if (shouldExclude($relativePath, $excludeFolders, $excludeFiles, $excludePatterns, $excludePathPatterns)) {
+function addDirectoryToZipOptimized(ZipArchive $zip, $baseDir, $excludeFoldersSet, $excludeFilesSet, $excludePatterns, $excludePathPatterns, &$fileCount) {
+    // Normalize baseDir untuk konsistensi
+    $baseDir = rtrim($baseDir, DIRECTORY_SEPARATOR);
+    $baseDir = str_replace('\\', '/', $baseDir);
+
+    $directoryIterator = new RecursiveDirectoryIterator(
+        $baseDir,
+        RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::UNIX_PATHS
+    );
+    $iterator = new RecursiveIteratorIterator(
+        $directoryIterator,
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($iterator as $fileInfo) {
+        $fullPath = $fileInfo->getPathname();
+        $fullPath = str_replace('\\', '/', $fullPath);
+
+        // Hitung relative path dengan benar
+        if (strpos($fullPath, $baseDir) === 0) {
+            $relativePath = substr($fullPath, strlen($baseDir) + 1);
+        } else {
+            // Fallback jika path tidak match
+            $relativePath = basename($fullPath);
+        }
+
+        // Skip symlinks
+        if ($fileInfo->isLink()) {
             continue;
         }
-        
-        if (is_dir($fullPath)) {
-            // Cek apakah folder ini harus di-exclude
-            $folderName = basename($fullPath);
-            $skipFolder = false;
-            foreach ($excludeFolders as $exFolder) {
-                if ($folderName === $exFolder) {
-                    $skipFolder = true;
-                    break;
-                }
-            }
-            if ($skipFolder) continue;
-            
-            // Tambahkan folder ke ZIP
+
+        if (shouldExclude($relativePath, $excludeFoldersSet, $excludeFilesSet, $excludePatterns, $excludePathPatterns)) {
+            continue;
+        }
+
+        if ($fileInfo->isDir()) {
+            // Tambahkan folder kosong ke ZIP
             $zip->addEmptyDir($relativePath);
-            
-            // Rekursif ke sub-folder
-            addDirectoryToZip($zip, $baseDir, $fullPath, $excludeFolders, $excludeFiles, $excludePatterns, $excludePathPatterns, $fileCount);
         } else {
-            // Skip symlinks
-            if (is_link($fullPath)) continue;
-            
+            // Tambahkan file ke ZIP
             $zip->addFile($fullPath, $relativePath);
             $fileCount++;
-            
-            if ($fileCount % 100 === 0) {
+
+            // Progress update setiap 500 file (lebih jarang untuk performa)
+            if ($fileCount % 500 === 0) {
                 echo "  -> $fileCount file ditambahkan...\n";
             }
         }
@@ -260,14 +272,14 @@ if ($result !== true) {
     die("\n❌ Gagal membuat file ZIP! Error code: $result\n");
 }
 
-echo "\nSedang membuat ZIP menggunakan PHP ZipArchive...\n";
-echo "Mohon tunggu, ini bisa memakan waktu beberapa menit...\n\n";
+echo "\nSedang membuat ZIP menggunakan PHP ZipArchive (OPTIMIZED)...\n";
+echo "Mohon tunggu, ini akan lebih cepat dari versi sebelumnya...\n\n";
 
 $baseDir = __DIR__;
 $fileCount = 0;
 
-// Tambahkan semua file project
-addDirectoryToZip($zip, $baseDir, $baseDir, $excludeFolders, $excludeFiles, $excludePatterns, $excludePathPatterns, $fileCount);
+// Tambahkan semua file project menggunakan fungsi optimized
+addDirectoryToZipOptimized($zip, $baseDir, $excludeFoldersSet, $excludeFilesSet, $excludePatterns, $excludePathPatterns, $fileCount);
 
 // ============================================================
 // TAMBAHKAN FOLDER KOSONG YANG WAJIB ADA (dengan .gitkeep)
@@ -287,9 +299,13 @@ if (!file_exists($zipFileName)) {
     die("\n❌ Gagal membuat file ZIP!\n");
 }
 
+$endTime = microtime(true);
+$executionTime = $endTime - $startTime;
+
 echo "\n✅ ZIP berhasil dibuat: {$zipFileName}\n";
 echo "Total file yang ditambahkan: $fileCount\n";
 echo "Ukuran file ZIP: " . number_format(filesize($zipFileName) / 1024 / 1024, 2) . " MB\n";
+echo "Waktu eksekusi: " . number_format($executionTime, 2) . " detik\n";
 
 echo "\nMulai memecah file ZIP menjadi bagian-bagian kecil (Maks 9MB)...\n";
 $handle = @fopen($zipFileName, 'rb');
@@ -315,11 +331,15 @@ echo "Jumlah total part: " . ($part - 1) . "\n\n";
 
 echo "LANGKAH DEPLOY KE INFINITYFREE:\n";
 echo "1. Upload file project.zip.001, project.zip.002, dst. ke folder 'htdocs'\n";
-echo "2. Upload file unzip.php ke folder 'htdocs'\n";
-echo "3. Akses domain.com/unzip.php untuk ekstrak\n";
-echo "4. Buat file .env secara MANUAL di File Manager (copy dari .env.example)\n";
-echo "5. Isi DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD sesuai hosting\n";
-echo "6. Akses domain.com/setup.php untuk import database\n";
-echo "7. Akses domain.com/deploy-setup untuk clear cache & buat storage link\n";
-echo "8. HAPUS file unzip.php dan setup.php setelah selesai!\n";
+echo "2. Upload file public/update.php ke folder 'htdocs'\n";
+echo "3. Akses domain.com/update.php untuk automated deployment\n";
+echo "   Script akan otomatis:\n";
+echo "   - Merge dan ekstrak file ZIP\n";
+echo "   - Setup .env dan generate APP_KEY\n";
+echo "   - Setup storage directories\n";
+echo "   - Run database migrations (jika .env sudah dikonfigurasi)\n";
+echo "   - Clear cache\n";
+echo "   - Cleanup deployment files\n";
+echo "4. Edit .env secara MANUAL di File Manager untuk database credentials\n";
+echo "5. Jika migrations gagal, run manual: php artisan migrate --force\n";
 echo "\n(Penting: Jangan upload project.zip yang utuh karena akan ditolak server InfinityFree)\n";

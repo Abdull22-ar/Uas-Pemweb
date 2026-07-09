@@ -11,7 +11,7 @@
         <p class="text-muted mb-0">Kelola dan tindaklanjuti semua laporan yang masuk</p>
     </div>
     <div>
-        <a href="http://localhost:8080/laporan.php" target="_blank" class="btn btn-outline-secondary shadow-sm">
+        <a href="{{ rtrim(env('FRONTEND_URL', 'http://localhost:8080'), '/') }}/laporan.php" target="_blank" class="btn btn-outline-secondary shadow-sm">
             <i class="bi bi-box-arrow-up-right me-2"></i>Form Publik
         </a>
     </div>
@@ -179,9 +179,6 @@
                                 <i class="bi bi-arrow-repeat"></i>
                             </a>
                             @if(auth()->user()->role === 'admin')
-                            <a href="{{ route('admin.laporan.edit', $l) }}" class="btn btn-sm btn-outline-primary" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
                             <form method="POST" action="{{ route('admin.laporan.destroy', $l) }}" onsubmit="return confirm('Hapus laporan {{ $l->kode_laporan }}? Aksi tidak dapat dibatalkan.')" class="d-inline">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">

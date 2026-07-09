@@ -36,6 +36,16 @@ class UpdateStatusLaporanRequest extends FormRequest
                 'nullable',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'petugas')),
             ],
+            'foto' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg',
+                'max:5120'
+            ],
+            'hapus_foto' => [
+                'nullable',
+                'boolean'
+            ],
         ];
     }
 

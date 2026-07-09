@@ -42,7 +42,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // 🌟 Manajemen Laporan Sampah (CRUD Admin)
     Route::resource('laporan', LaporanSampahController::class)
-         ->parameters(['laporan' => 'laporanSampah']);
+         ->parameters(['laporan' => 'laporanSampah'])
+         ->except(['edit', 'update']);
 
     // Update status & catatan petugas
     Route::get('laporan/{laporanSampah}/status', [LaporanSampahController::class, 'editStatus'])

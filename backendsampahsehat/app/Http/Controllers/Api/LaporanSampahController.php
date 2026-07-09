@@ -7,7 +7,7 @@ use App\Models\KategoriSampah;
 use App\Models\LaporanSampah;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -74,16 +74,22 @@ class LaporanSampahController extends Controller
     private function formatLaporan(LaporanSampah $laporan, bool $withKategori = true): array
     {
         $data = [
+            'id'              => $laporan->id,
             'kode_laporan'    => $laporan->kode_laporan,
             'nama_pelapor'    => $laporan->nama_pelapor,
             'kontak_pelapor'  => $laporan->kontak_pelapor,
             'lokasi'          => $laporan->lokasi,
+            'latitude'        => $laporan->latitude ? (string) $laporan->latitude : null,
+            'longitude'       => $laporan->longitude ? (string) $laporan->longitude : null,
             'koordinat'       => $laporan->koordinat,       // accessor: {lat, lng} atau null
             'deskripsi'       => $laporan->deskripsi,
+            'foto'            => $laporan->foto_url,
             'foto_url'        => $laporan->foto_url,         // accessor: URL lengkap atau null
             'status'          => $laporan->status,
             'label_status'    => $laporan->label_status,    // accessor: emoji + teks
             'catatan_petugas' => $laporan->catatan_petugas,
+            'created_at'      => $laporan->created_at?->toIso8601String(),
+            'updated_at'      => $laporan->updated_at?->toIso8601String(),
             'dibuat_pada'     => $laporan->created_at?->toIso8601String(),
             'diperbarui_pada' => $laporan->updated_at?->toIso8601String(),
         ];
@@ -228,7 +234,23 @@ class LaporanSampahController extends Controller
         $data = $validator->validated();
 
         if ($request->hasFile('foto')) {
-            $data['foto'] = $request->file('foto')->store('laporan/foto', 'public');
+            $file = $request->file('foto');
+            
+            // Generate nama file unik untuk menghindari overwrite
+            $extension = $file->getClientOriginalExtension();
+            $filenameOnly = uniqid() . '_' . time() . '.' . $extension;
+            $relativePath = 'laporan/foto/' . $filenameOnly;
+            
+            // Pastikan direktori tujuan ada
+            $destinationPath = public_path('laporan/foto');
+            if (!is_dir($destinationPath)) {
+                @mkdir($destinationPath, 0755, true);
+            }
+            
+            // Pindahkan file ke folder public/laporan/foto
+            $file->move($destinationPath, $filenameOnly);
+            
+            $data['foto'] = $relativePath;
         }
 
         // ── Simpan ke DB (kode_laporan di-generate otomatis di Model::boot) ─

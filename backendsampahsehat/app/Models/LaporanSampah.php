@@ -126,13 +126,16 @@ class LaporanSampah extends Model
     }
 
     /**
-     * Tampilkan URL foto lengkap (jika foto tersimpan di storage).
+     * Tampilkan URL foto lengkap (jika foto tersimpan di public folder).
      */
     public function getFotoUrlAttribute(): ?string
     {
-        return $this->foto
-            ? asset('storage/' . $this->foto)
-            : null;
+        if (empty($this->foto)) {
+            return null;
+        }
+        
+        // Langsung return asset URL tanpa cek file_exists() karena sering gagal di shared hosting (cPanel)
+        return asset($this->foto);
     }
 
     /**

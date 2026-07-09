@@ -29,7 +29,7 @@
                 <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-arrow-repeat text-warning me-2"></i>Form Update Status</h5>
             </div>
             <div class="card-body p-4 p-md-5">
-                <form method="POST" action="{{ route('admin.laporan.update-status', $laporanSampah) }}" id="updateStatusForm">
+                <form method="POST" action="{{ route('admin.laporan.update-status', $laporanSampah) }}" id="updateStatusForm" enctype="multipart/form-data">
                     @csrf @method('PATCH')
 
                     {{-- Status saat ini --}}
@@ -144,6 +144,26 @@
                     </div>
                     @endif
 
+                    {{-- Update Foto Bukti --}}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark" for="foto">Update Foto Bukti <span class="text-muted fw-normal small ms-1">(opsional)</span></label>
+                        <input class="form-control {{ $errors->has('foto') ? 'is-invalid' : '' }}" type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/jpg">
+                        <div class="form-text">Biarkan kosong jika tidak ingin mengubah foto. Format: JPG, PNG, maksimal 5MB.</div>
+                        @error('foto')
+                            <div class="invalid-feedback"><i class="bi bi-exclamation-circle me-1"></i>{{ $message }}</div>
+                        @enderror
+
+                        @if($laporanSampah->foto)
+                            <div class="mt-3 p-3 bg-danger bg-opacity-10 border border-danger-subtle rounded-3">
+                                <div class="form-check m-0">
+                                    <input class="form-check-input" type="checkbox" name="hapus_foto" value="1" id="hapus_foto">
+                                    <label class="form-check-label text-danger fw-medium" for="hapus_foto">
+                                        <i class="bi bi-trash me-1"></i>Hapus foto yang sudah ada saat ini
+                                    </label>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                     <div class="pt-3 border-top mt-4">
                         <button type="submit" class="btn btn-primary px-4 py-2 shadow-sm">
                             <i class="bi bi-check-lg me-2"></i>Simpan Perubahan Status

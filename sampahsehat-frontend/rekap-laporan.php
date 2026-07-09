@@ -13,8 +13,9 @@ include 'components/navbar.php';
 // Ambil data dari API publik
 $allData = [];
 $totalBaru = 0; $totalDiproses = 0; $totalSelesai = 0; $totalDitolak = 0;
+$errorMsg = null;
 
-$api_url = API_BASE_URL . '/laporan-publik?per_page=200';
+$api_url = API_BASE_URL . '/api/laporan-publik?per_page=200';
 $context = stream_context_create(['http' => ['ignore_errors' => true, 'timeout' => 5]]);
 $response = @file_get_contents($api_url, false, $context);
 if ($response !== false) {
@@ -28,7 +29,11 @@ if ($response !== false) {
             elseif ($st === 'selesai') $totalSelesai++;
             elseif ($st === 'ditolak') $totalDitolak++;
         }
+    } else {
+        $errorMsg = $resData['message'] ?? 'Data rekap belum bisa dimuat.';
     }
+} else {
+    $errorMsg = 'Gagal terhubung ke server API.';
 }
 
 $totalLaporan = count($allData);
@@ -47,6 +52,13 @@ $totalBelumSelesai = $totalBaru + $totalDiproses;
         </div>
         <span class="badge bg-primary rounded-pill px-3 py-2"><i class="bi bi-database me-1"></i><?= $totalLaporan ?> Total</span>
     </div>
+
+    <?php if ($errorMsg): ?>
+        <div class="alert alert-warning d-flex align-items-center rounded-3 p-3" role="alert">
+            <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
+            <div class="small"><?= htmlspecialchars($errorMsg) ?></div>
+        </div>
+    <?php endif; ?>
 
     <!-- Stat Cards -->
     <div class="row g-3 mb-4">
@@ -269,8 +281,20 @@ document.addEventListener('DOMContentLoaded', function() {
     var markers = [];
     var data = <?= json_encode($allData) ?>;
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function(char) {
+            return ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[char];
+        });
+    }
+
     function getStatusColor(st) {
-        switch(st) {
+        switch((st || '').toLowerCase()) {
             case 'baru': return '#0d6efd';
             case 'diproses': return '#ffc107';
             case 'selesai': return '#198754';
@@ -294,19 +318,20 @@ document.addEventListener('DOMContentLoaded', function() {
             var lng = parseFloat(item.koordinat.longitude);
             if (isNaN(lat) || isNaN(lng)) return;
 
-            var color = getStatusColor(item.status);
+            var status = (item.status || '').toLowerCase();
+            var color = getStatusColor(status);
             var marker = L.marker([lat, lng], { icon: createIcon(color) })
                 .addTo(map)
                                 .bindPopup(
                                     '<div style="min-width:180px;">' +
-                                    '<h6 class="fw-bold mb-1" style="font-size:13px;">' + (item.kode_laporan || '') + '</h6>' +
-                                    '<div class="mb-1 small"><i class="bi bi-geo-alt"></i> ' + (item.lokasi || '') + '</div>' +
-                                    '<div class="mb-1 small"><i class="bi bi-tag"></i> ' + (item.kategori || '') + '</div>' +
-                                    (item.petugas ? '<div class="mb-1 small"><i class="bi bi-person-badge"></i> ' + item.petugas + '</div>' : '') +
-                                    '<div class="mt-2"><span class="badge rounded-pill" style="background:' + color + ';">' + (item.label_status || '') + '</span></div>' +
+                                    '<h6 class="fw-bold mb-1" style="font-size:13px;">' + escapeHtml(item.kode_laporan || '-') + '</h6>' +
+                                    '<div class="mb-1 small"><i class="bi bi-geo-alt"></i> ' + escapeHtml(item.lokasi || '-') + '</div>' +
+                                    '<div class="mb-1 small"><i class="bi bi-tag"></i> ' + escapeHtml(item.kategori || '-') + '</div>' +
+                                    (item.petugas ? '<div class="mb-1 small"><i class="bi bi-person-badge"></i> ' + escapeHtml(item.petugas) + '</div>' : '') +
+                                    '<div class="mt-2"><span class="badge rounded-pill" style="background:' + color + ';">' + escapeHtml(item.label_status || status || '-') + '</span></div>' +
                                     '</div>'
                 );
-            marker._status = item.status;
+            marker._status = status;
             markers.push(marker);
         }
     });

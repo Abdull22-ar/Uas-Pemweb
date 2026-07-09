@@ -1,10 +1,10 @@
 [
     {
         "id": 1,
-        "nama": "Annisa Kholifatul",
-        "email": "annisa@pelapor.com",
+        "nama": "User",
+        "email": "user@pelapor.com",
         "role": "Pelapor",
-        "password": "password123",
+        "password": "password",
         "created_at": "2026-06-23 16:59:23",
         "updated_at": "2026-06-23 16:59:23"
     },

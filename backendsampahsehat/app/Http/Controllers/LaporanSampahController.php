@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreLaporanSampahRequest;
-use App\Http\Requests\UpdateLaporanSampahRequest;
 use App\Http\Requests\UpdateStatusLaporanRequest;
 use App\Models\KategoriSampah;
 use App\Models\LaporanSampah;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+
 use Illuminate\View\View;
 
 class LaporanSampahController extends Controller
@@ -113,7 +112,23 @@ class LaporanSampahController extends Controller
 
         // Upload foto jika ada
         if ($request->hasFile('foto')) {
-            $data['foto'] = $request->file('foto')->store('laporan/foto', 'public');
+            $file = $request->file('foto');
+            
+            // Generate nama file unik untuk menghindari overwrite
+            $extension = $file->getClientOriginalExtension();
+            $filenameOnly = uniqid() . '_' . time() . '.' . $extension;
+            $relativePath = 'laporan/foto/' . $filenameOnly;
+            
+            // Pastikan direktori tujuan ada
+            $destinationPath = public_path('laporan/foto');
+            if (!is_dir($destinationPath)) {
+                @mkdir($destinationPath, 0755, true);
+            }
+            
+            // Pindahkan file ke folder public/laporan/foto
+            $file->move($destinationPath, $filenameOnly);
+            
+            $data['foto'] = $relativePath;
         }
 
         $laporan = LaporanSampah::create($data);
@@ -143,49 +158,6 @@ class LaporanSampahController extends Controller
         return view('admin.laporan.show', compact('laporanSampah'));
     }
 
-    // =========================================================================
-    // EDIT & UPDATE
-    // =========================================================================
-
-    /**
-     * Tampilkan form edit laporan (admin only).
-     */
-    public function edit(LaporanSampah $laporanSampah): View
-    {
-        abort_unless(auth()->user()->role === 'admin', 403, 'Hanya admin yang dapat mengedit laporan.');
-
-        $kategoriList = KategoriSampah::aktif()->orderBy('nama_kategori')->get();
-
-        return view('admin.laporan.edit', compact('laporanSampah', 'kategoriList'));
-    }
-
-    /**
-     * Simpan perubahan laporan ke database.
-     */
-    public function update(UpdateLaporanSampahRequest $request, LaporanSampah $laporanSampah): RedirectResponse
-    {
-        $data = $request->validated();
-
-        // Update foto: hapus yang lama jika ada foto baru
-        if ($request->hasFile('foto')) {
-            if ($laporanSampah->foto) {
-                Storage::disk('public')->delete($laporanSampah->foto);
-            }
-            $data['foto'] = $request->file('foto')->store('laporan/foto', 'public');
-        }
-
-        // Hapus foto jika user memilih opsi "hapus foto"
-        if ($request->boolean('hapus_foto') && $laporanSampah->foto && !$request->hasFile('foto')) {
-            Storage::disk('public')->delete($laporanSampah->foto);
-            $data['foto'] = null;
-        }
-
-        $laporanSampah->update($data);
-
-        return redirect()
-            ->route('admin.laporan.show', $laporanSampah)
-            ->with('success', "Laporan {$laporanSampah->kode_laporan} berhasil diperbarui.");
-    }
 
     // =========================================================================
     // DESTROY
@@ -200,9 +172,10 @@ class LaporanSampahController extends Controller
 
         $kode = $laporanSampah->kode_laporan;
 
-        // Hapus file foto dari storage
+        // Hapus file foto dari public folder
         if ($laporanSampah->foto) {
-            Storage::disk('public')->delete($laporanSampah->foto);
+            $filePath = public_path($laporanSampah->foto);
+            @unlink($filePath);
         }
 
         $laporanSampah->delete();
@@ -273,6 +246,36 @@ class LaporanSampahController extends Controller
 
         if ($request->filled('petugas_id')) {
             $data['petugas_id'] = $request->petugas_id;
+        }
+
+        // Update foto: hapus yang lama jika ada foto baru
+        if ($request->hasFile('foto')) {
+            // Hapus foto lama jika ada
+            if ($laporanSampah->foto) {
+                $oldFilePath = public_path($laporanSampah->foto);
+                @unlink($oldFilePath);
+            }
+            
+            // Upload foto baru
+            $file = $request->file('foto');
+            $extension = $file->getClientOriginalExtension();
+            $filenameOnly = uniqid() . '_' . time() . '.' . $extension;
+            $relativePath = 'laporan/foto/' . $filenameOnly;
+            
+            $destinationPath = public_path('laporan/foto');
+            if (!is_dir($destinationPath)) {
+                @mkdir($destinationPath, 0755, true);
+            }
+            
+            $file->move($destinationPath, $filenameOnly);
+            $data['foto'] = $relativePath;
+        }
+
+        // Hapus foto jika user memilih opsi "hapus foto"
+        if ($request->boolean('hapus_foto') && $laporanSampah->foto && !$request->hasFile('foto')) {
+            $oldFilePath = public_path($laporanSampah->foto);
+            @unlink($oldFilePath);
+            $data['foto'] = null;
         }
 
         $laporanSampah->update($data);

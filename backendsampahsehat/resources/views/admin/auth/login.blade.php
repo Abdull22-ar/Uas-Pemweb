@@ -347,7 +347,7 @@
             </form>        </div>
 
         <div class="public-link">
-            Bukan admin? <a href="http://localhost:8080/laporan.php">Buat laporan sampah</a>
+            Bukan admin? <a href="{{ rtrim(env('FRONTEND_URL', 'http://localhost:8080'), '/') }}/laporan.php">Buat laporan sampah</a>
         </div>
     </div>
 

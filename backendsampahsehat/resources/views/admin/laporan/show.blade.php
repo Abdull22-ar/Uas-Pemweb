@@ -5,12 +5,20 @@
 
 @section('content')
 
+@php
+    $months = [
+        1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April', 5=>'Mei', 6=>'Juni',
+        7=>'Juli', 8=>'Agustus', 9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+    ];
+    $date = $laporanSampah->created_at;
+    $tanggalIndo = $date->format('d') . ' ' . $months[(int)$date->format('m')] . ' ' . $date->format('Y, H:i');
+@endphp
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-1">
             Laporan <span class="text-primary font-monospace">{{ $laporanSampah->kode_laporan }}</span>
         </h2>
-        <p class="text-muted mb-0"><i class="bi bi-calendar3 me-1"></i> Dilaporkan pada {{ $laporanSampah->created_at->format('d M Y, H:i') }} WIB</p>
+        <p class="text-muted mb-0"><i class="bi bi-calendar3 me-1"></i> Dilaporkan pada {{ $tanggalIndo }} WIB</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('admin.laporan.edit-status', $laporanSampah) }}" class="btn btn-warning shadow-sm">
@@ -50,8 +58,12 @@
                     <h6 class="text-uppercase fw-bold mb-1 {{ $stConfig['color'] }}" style="letter-spacing: 1px; font-size: 0.8rem;">Status Laporan</h6>
                     <h3 class="fw-bold mb-0 {{ $stConfig['color'] }}">{{ $stConfig['label'] }}</h3>
                     @if($laporanSampah->updated_at != $laporanSampah->created_at)
+                        @php
+                            $updatedDate = $laporanSampah->updated_at;
+                            $updatedIndo = $updatedDate->format('d') . ' ' . $months[(int)$updatedDate->format('m')] . ' ' . $updatedDate->format('Y, H:i');
+                        @endphp
                         <div class="small mt-1 {{ $stConfig['color'] }} opacity-75">
-                            Diperbarui {{ $laporanSampah->updated_at->format('d M Y, H:i') }}
+                            Diperbarui {{ $updatedIndo }}
                         </div>
                     @endif
                 </div>
@@ -178,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).addTo(map);
     
     L.marker([lat, lng]).addTo(map)
-        .bindPopup('<b>Lokasi Kejadian</b><br>{{ $laporanSampah->lokasi }}')
+        .bindPopup('<b>Lokasi Kejadian</b><br>{{ addslashes($laporanSampah->lokasi) }}')
         .openPopup();
 });
 </script>
